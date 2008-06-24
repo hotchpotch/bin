@@ -11,6 +11,7 @@ require 'fileutils'
 cmd = ['git-archive']
 
 argv = ARGV.to_a
+QUIET = argv.delete "-d"
 
 path = Pathname.new(argv.pop)
 repos = argv.pop || '.'
@@ -20,7 +21,8 @@ def exec(cmd, git_archive_options, path)
   git_archive_options << 'HEAD' if git_archive_options.length == 0
   path.mkpath
   cmd.concat git_archive_options
-  cmd << "|tar xvf - -C '#{path}'"
+  cmd << "|tar x#{QUIET ? '' : 'v'}f - -C '#{path}'"
+  puts cmd.join(' ') unless QUIET
   system cmd.join(' ')
 end
 
