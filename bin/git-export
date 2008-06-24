@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+if ARGV.length < 1
+  warn "usage: git-export [git-archive options] [repos] path"
+  exit 1
+end
+
+require 'pathname'
+require 'fileutils'
+
+cmd = ['git-archive']
+
+argv = ARGV.to_a
+
+path = Pathname.new(argv.pop)
+repos = argv.pop || '.'
+repos_path = Pathname.new repos
+
+def exec(cmd, git_archive_options, path)
+  git_archive_options << 'HEAD' if git_archive_options.length == 0
+  path.mkpath
+  cmd.concat git_archive_options
+  cmd << "|tar xvf - -C '#{path}'"
+  system cmd.join(' ')
+end
+
+if path.directory?  
+  warn "#{path} is exist."
+  exit 1
+end
+
+if repos_path.directory?
+  FileUtils.cd(repos_path) do |dir|
+    `git-show-ref`
+    if $? == 0
+      cmd << '--prefix='
+      exec cmd, argv, path
+    else
+      warn "#{repos_path} is not git dir."
+      exit 1
+    end
+  end
+else
+  cmd << "--remote=#{repos}"
+  exec cmd, argv, path
+end
