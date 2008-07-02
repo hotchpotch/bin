@@ -19,7 +19,6 @@ repos_path = Pathname.new repos
 
 def exec(cmd, git_archive_options, path)
   git_archive_options << 'HEAD' if git_archive_options.length == 0
-  path.mkpath
   cmd.concat git_archive_options
   cmd << "|tar x#{QUIET ? '' : 'v'}f - -C '#{path}'"
   puts cmd.join(' ') unless QUIET
@@ -30,6 +29,8 @@ if path.directory?
   warn "#{path} is exist."
   exit 1
 end
+path.mkpath
+path = path.realpath
 
 if repos_path.directory?
   FileUtils.cd(repos_path) do |dir|

@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+if ARGV.delete '-h'
+  puts "usage: git-commitline-count [2008-07-24 2008-08-22]"
+  exit 0
+end
+
+branch = 'master'
+
+#git diff --shortstat \{yesterday\}..\{"3 week ago"\}
+require 'date'
+
+class Date
+  def to_s
+    strftime "%Y-%m-%d"
+  end
+  def inspect
+    strftime '#<Date: %x>'
+  end
+end
+
+since = Date.parse `git-log --reverse --date=short`.scan(/^Date:\s+(.+)$/).flatten.first
+
+if ARGV.length == 2
+  bday = Date.parse ARGV.shift
+  eday = Date.parse ARGV.shift
+elsif ARGV.length == 1
+  bday = Date.parse ARGV.shift
+  eday = Date.today
+else
+  bday = since
+  eday = Date.today
+end
+
+if bday < since
+  bday = since
+end
+
+if eday < bday
+  exit 1
+end
+
+total = []
+while bday < eday
+  cmd = "git-diff --shortstat #{branch}@{#{eday - 1}}..#{branch}@{#{eday}}"
+  res = `#{cmd} 2>/dev/null`
+  #9 files changed, 180 insertions(+), 16 deletions(-)
+  if m = res.match(/(\d+)\s*insertions\(\+\),\s*(\d+)\s*deletions/)
+    insertion = m[1].to_i
+    deletion = m[2].to_i
+    puts "#{eday - 1}: #{(insertion - deletion).to_s.ljust(12)} +#{insertion.to_s.ljust(12)} -#{deletion.to_s.ljust(12)}"
+  end
+  eday = eday - 1
+end
+
+
